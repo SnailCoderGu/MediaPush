@@ -54,7 +54,7 @@ public:
             return 0; // 不实际从设备中读取数据，因为我们处理的是输入数据
     }
 
-    qint64 writeData(const char* data, qint64 len);
+    qint64 writeData(const char* data, qint64 len) override;
 
     void CaculateLevel(const char* data, qint64 len);
 

@@ -126,7 +126,7 @@ void MediaPushWindow::setMic(const QAudioDeviceInfo& cameraInfo)
 {
 	m_mic.reset(new AudioCapture());
 
-	connect(m_mic.data(), SIGNAL(aframeAvailable(const char* data, qint64 len)), this, SLOT(recvAFrame(const char* data, qint64 len)));
+	connect(m_mic.data(), &AudioCapture::aframeAvailable, this, &MediaPushWindow::recvAFrame);
 	
 	//¼àÌýÂó¿Ë·çµÄlevel
 	connect(m_mic.data(), &AudioCapture::updateLevel, [this]() {
@@ -175,7 +175,7 @@ void MediaPushWindow::setCamera(const QCameraInfo& cameraInfo)
 	connect(m_camera.data(), QOverload<QCamera::LockStatus, QCamera::LockChangeReason>::of(&QCamera::lockStatusChanged),
 		this, &MediaPushWindow::updateLockStatus);
 
-	QList<QVideoFrame::PixelFormat> list = m_camera->supportedViewfinderPixelFormats();
+	//QList<QVideoFrame::PixelFormat> list = m_camera->supportedViewfinderPixelFormats();
 	
 	ui.captureWidget->setTabEnabled(0, (m_camera->isCaptureModeSupported(QCamera::CaptureStillImage)));
 	ui.captureWidget->setTabEnabled(1, (m_camera->isCaptureModeSupported(QCamera::CaptureVideo)));
@@ -212,7 +212,7 @@ void MediaPushWindow::recvVFrame(QVideoFrame& frame) {
 			dst_yuv_420 = new uchar[width * height * 3 / 2];
 			memset(dst_yuv_420, 128, width * height * 3 / 2);
 		}
-
+		
 		int planeCount = frame.planeCount();
 		int mapBytes = frame.mappedBytes();
 		int rgb32BytesPerLine = frame.bytesPerLine();
