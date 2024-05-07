@@ -1,9 +1,13 @@
 #include "MediaPushWindow.h"
 #include <QtWidgets/QApplication>
 #include "AudioCapture.h"
+#include <QDebug>
+
+
 
 int main(int argc, char *argv[])
 {
+
 
 
 

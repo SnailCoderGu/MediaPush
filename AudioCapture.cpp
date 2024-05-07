@@ -201,7 +201,7 @@ void AudioCapture::CaculateLevel(const char* data, qint64 len) {
 qint64 AudioCapture::writeData(const char* data, qint64 len)
 {
     // 在这里处理音频数据，例如保存到文件、进行处理等
-    qDebug() << "Received audio data. Size:" << len;
+    //qDebug() << "Received audio data. Size:" << len;
     CaculateLevel(data,len);
 
     emit aframeAvailable(data,len);

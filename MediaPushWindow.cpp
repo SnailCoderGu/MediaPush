@@ -77,6 +77,9 @@ void MediaPushWindow::start()
 	ui.actionStop->setEnabled(true);
 	ui.actionSettings->setEnabled(false);
 
+	start_flag = true;
+
+#ifdef WRITE_CAPTURE_YUV
 	if (!yuv_out_file) {
 		yuv_out_file = fopen("ouput.yuv", "wb");
 		if (yuv_out_file == nullptr)
@@ -84,6 +87,7 @@ void MediaPushWindow::start()
 			qDebug() << "Open yuv file failed";
 		}
 	}
+#endif // WRITE_CAPTURE_YUV
 
 	if (!rgb_out_file) {
 		rgb_out_file = fopen("output.rgb", "wb");
@@ -107,10 +111,20 @@ void MediaPushWindow::stop()
 	ui.actionStop->setEnabled(false);
 	ui.actionSettings->setEnabled(true);
 
+#ifdef WRITE_CAPTURE_YUV
 	if (yuv_out_file) {
 		fclose(yuv_out_file);
 		yuv_out_file = nullptr;
 	}
+#endif
+
+	if (ffVideoEncoder)
+	{
+		ffVideoEncoder->StopEncode();
+		ffVideoEncoder.reset(nullptr);
+	}
+
+	start_flag = false;
 
 	if (rgb_out_file) {
 		fclose(rgb_out_file);
@@ -200,10 +214,10 @@ void MediaPushWindow::recvVFrame(QVideoFrame& frame) {
 	QVideoFrame::PixelFormat pixelFormat = frame.pixelFormat();
 	
 	//需要写文件的时候才去转换数据
-	if (pixelFormat == QVideoFrame::Format_RGB32 && yuv_out_file)
+
+	if (pixelFormat == QVideoFrame::Format_RGB32 && start_flag)
 	{
 		
-
 		int width = frame.width();
 		int height = frame.height();
 
@@ -211,6 +225,18 @@ void MediaPushWindow::recvVFrame(QVideoFrame& frame) {
 		{
 			dst_yuv_420 = new uchar[width * height * 3 / 2];
 			memset(dst_yuv_420, 128, width * height * 3 / 2);
+		}
+
+		if (!ffVideoEncoder)
+		{
+#if USE_FFMPEG_VIDEO_ENCODE
+			ffVideoEncoder.reset(new VideoEncodeFF());
+			ffVideoEncoder->InitEncode(width, height, 25, 2000000, "main");
+#else
+			ffVideoEncoder.reset(new VideoEncoderX());
+			ffVideoEncoder->InitEncode(width, height, 25, 2000000, "42801f");
+			
+#endif
 		}
 		
 		int planeCount = frame.planeCount();
@@ -255,9 +281,15 @@ void MediaPushWindow::recvVFrame(QVideoFrame& frame) {
 				}
 			}
 		}
+
+		ffVideoEncoder->Encode(dst_yuv_420, nullptr);
+
+
+#ifdef WRITE_CAPTURE_YUV
 		if (yuv_out_file) {
 			fwrite(dst_yuv_420, 1, width * height * 3 / 2, yuv_out_file);
 		}
+#endif // WRITE_CAPTURE_YUV
 
 	}
 	

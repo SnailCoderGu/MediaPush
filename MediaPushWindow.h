@@ -13,6 +13,17 @@
 #include "CBaseCameraSurface.h"
 #include "AudioCapture.h"
 
+
+#define USE_FFMPEG_VIDEO_ENCODE 1;
+
+#if USE_FFMPEG_VIDEO_ENCODE
+#include "VideoEncodeFF.h"
+#else
+#include "VideoEncoderX.h"
+#endif
+
+//#define WRITE_CAPTURE_YUV
+
 #define RGB2Y(r,g,b) \
 	((unsigned char)((66 * r + 129 * g + 25 * b + 128) >> 8)+16)
 
@@ -25,11 +36,11 @@
 
 class MediaPushWindow : public QMainWindow
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    MediaPushWindow(QWidget *parent = nullptr);
-    ~MediaPushWindow();
+	MediaPushWindow(QWidget* parent = nullptr);
+	~MediaPushWindow();
 private slots:
 	void setCamera(const QCameraInfo& cameraInfo);
 	void setMic(const QAudioDeviceInfo& cameraInfo);
@@ -42,7 +53,7 @@ private slots:
 	void displayCaptureError(int, QCameraImageCapture::Error, const QString& errorString);
 
 	void configureCaptureSettings();
-	
+
 	void configureImageSettings();
 
 	void displayCameraError();
@@ -71,7 +82,7 @@ protected:
 	void closeEvent(QCloseEvent* event) override;
 
 private:
-    Ui::Camera ui;
+	Ui::Camera ui;
 
 	//因YUV的范围是0~255因此在其范围外的数值都做截断处理
 	inline unsigned char clip_value(unsigned char x, unsigned char min_val, unsigned char  max_val) {
@@ -96,7 +107,12 @@ private:
 	bool m_isCapturingImage = false;
 	bool m_applicationExiting = false;
 
+	bool start_flag = false;
+#ifdef WRITE_CAPTURE_YUV
 	FILE* yuv_out_file = nullptr;
+#endif // WRITE_CAPTURE_YUV
+
+
 	FILE* rgb_out_file = nullptr;
 	FILE* pcm_out_file = nullptr;
 
@@ -107,5 +123,11 @@ private:
 
 	RenderArea* renderArea;
 
+#if USE_FFMPEG_VIDEO_ENCODE
+	QScopedPointer<VideoEncodeFF> ffVideoEncoder;
+#else
+	QScopedPointer<VideoEncoderX> ffVideoEncoder;
+#endif
 
+	
 };

@@ -66,11 +66,11 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)x264_install\include;$(SolutionDir)ffmpeg3.4-x64-debug\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)x264_install\lib;$(SolutionDir)ffmpeg3.4-x64-debug\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libx264.lib;avcodec.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
@@ -98,6 +98,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="VideoEncodeFF.cpp" />
+    <ClCompile Include="VideoEncoderX.cpp" />
     <QtRcc Include="MediaPushWindow.qrc" />
     <QtUic Include="imagesettings.ui">
       <QtUicDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)uic\</QtUicDir>
@@ -120,6 +122,11 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="AudioCapture.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="VideoEncode.h" />
+    <ClInclude Include="VideoEncodeFF.h" />
+    <ClInclude Include="VideoEncoderX.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
