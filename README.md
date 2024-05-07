@@ -1,7 +1,7 @@
 # MediaPush
 使用ffmpeg ,directshow,x624,fdkaac,rtmp等技术，推流到平台
 
-v1.0.0
+v1.0.1
 1. 添加ffmpeg库，库支持libx264
 2. 添加独立的libx264静态库
 3. 支持ffmpeg 的api编码264
