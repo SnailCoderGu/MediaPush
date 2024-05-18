@@ -70,6 +70,13 @@ MediaPushWindow::MediaPushWindow(QWidget *parent)
 
 }
 
+void MediaPushWindow::InitAudioEncode()
+{
+	int sample_rate = m_mic->format().sample_rate;
+	int channel_layout = m_mic->format().chanel_layout;
+	AVSampleFormat smaple_fmt = m_mic->format().sample_fmt;
+	aacEncoder->InitEncode(sample_rate, 96000, smaple_fmt, channel_layout);
+}
 
 void MediaPushWindow::start()
 {
@@ -78,6 +85,11 @@ void MediaPushWindow::start()
 	ui.actionSettings->setEnabled(false);
 
 	start_flag = true;
+
+	m_mic->OpenWrite();
+	aacEncoder.reset(new AacEncoder());
+	InitAudioEncode();
+	
 
 #ifdef WRITE_CAPTURE_YUV
 	if (!yuv_out_file) {
@@ -96,13 +108,7 @@ void MediaPushWindow::start()
 			qDebug() << "Open rgb file failed";
 		}
 	}
-	if (!pcm_out_file) {
-		pcm_out_file = fopen("output.pcm", "wb");
-		if (!pcm_out_file)
-		{
-			qDebug() << "open pcm file faild";
-		}
-	}
+
 }
 
 void MediaPushWindow::stop()
@@ -118,6 +124,14 @@ void MediaPushWindow::stop()
 	}
 #endif
 
+	m_mic->CloseWrite();
+
+	if (aacEncoder)
+	{
+		aacEncoder->StopEncode();
+		aacEncoder.reset(nullptr);
+	}
+
 	if (ffVideoEncoder)
 	{
 		ffVideoEncoder->StopEncode();
@@ -130,10 +144,7 @@ void MediaPushWindow::stop()
 		fclose(rgb_out_file);
 		rgb_out_file = nullptr;
 	}
-	if (pcm_out_file) {
-		fclose(pcm_out_file);
-		pcm_out_file = nullptr;
-	}
+
 }
 
 void MediaPushWindow::setMic(const QAudioDeviceInfo& cameraInfo)
@@ -202,8 +213,9 @@ void MediaPushWindow::setCamera(const QCameraInfo& cameraInfo)
 
 void MediaPushWindow::recvAFrame(const char* data, qint64 len)
 {
-	if (pcm_out_file) {
-		fwrite(data, 1, len, pcm_out_file);
+	if (aacEncoder)
+	{
+	   aacEncoder->Encode(data, len, nullptr);
 	}
 }
 
@@ -234,8 +246,7 @@ void MediaPushWindow::recvVFrame(QVideoFrame& frame) {
 			ffVideoEncoder->InitEncode(width, height, 25, 2000000, "main");
 #else
 			ffVideoEncoder.reset(new VideoEncoderX());
-			ffVideoEncoder->InitEncode(width, height, 25, 2000000, "42801f");
-			
+			ffVideoEncoder->InitEncode(width, height, 25, 2000000, "42801f");	
 #endif
 		}
 		

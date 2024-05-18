@@ -25,11 +25,13 @@ int VideoEncodeFF::InitEncode(int width, int height, int fps, int bitrate, const
 	//codec = avcodec_find_encoder_by_name("libx264");
 	codec = avcodec_find_encoder(AVCodecID::AV_CODEC_ID_H264);
 
+
 	if (codec == NULL) {
 		//qDebug() << "cannot find video codec id: " << codec->id;
 		return -1;
 	}
 
+	qDebug() << "codec name: " << codec->name;
 	qDebug() << "codec long name: " << codec->long_name;
 
 	videoCodecCtx = avcodec_alloc_context3(codec);

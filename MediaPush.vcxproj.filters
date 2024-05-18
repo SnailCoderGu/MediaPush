@@ -55,6 +55,12 @@
     <ClCompile Include="VideoEncoderX.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AacEncoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SwrResample.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="imagesettings.ui">
@@ -80,6 +86,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VideoEncoderX.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AacEncoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SwrResample.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

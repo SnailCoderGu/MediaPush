@@ -21,6 +21,7 @@
 #else
 #include "VideoEncoderX.h"
 #endif
+#include "AacEncoder.h"
 
 //#define WRITE_CAPTURE_YUV
 
@@ -80,6 +81,8 @@ private slots:
 protected:
 
 	void closeEvent(QCloseEvent* event) override;
+private:
+	void InitAudioEncode();
 
 private:
 	Ui::Camera ui;
@@ -114,7 +117,7 @@ private:
 
 
 	FILE* rgb_out_file = nullptr;
-	FILE* pcm_out_file = nullptr;
+
 
 	unsigned char* dst_yuv_420 = nullptr;
 
@@ -128,6 +131,8 @@ private:
 #else
 	QScopedPointer<VideoEncoderX> ffVideoEncoder;
 #endif
+
+	QScopedPointer<AacEncoder> aacEncoder;
 
 	
 };

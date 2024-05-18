@@ -98,6 +98,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AacEncoder.cpp" />
+    <ClCompile Include="SwrResample.cpp" />
     <ClCompile Include="VideoEncodeFF.cpp" />
     <ClCompile Include="VideoEncoderX.cpp" />
     <QtRcc Include="MediaPushWindow.qrc" />
@@ -124,6 +126,8 @@
     <QtMoc Include="AudioCapture.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AacEncoder.h" />
+    <ClInclude Include="SwrResample.h" />
     <ClInclude Include="VideoEncode.h" />
     <ClInclude Include="VideoEncodeFF.h" />
     <ClInclude Include="VideoEncoderX.h" />
