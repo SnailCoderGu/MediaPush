@@ -1,6 +1,12 @@
 # MediaPush
 使用ffmpeg ,directshow,x624,fdkaac,rtmp等技术，推流到平台
 
+v1.1.0
+1. 加入了ffmpeg推送rtmp
+2. 可以启动推流，关闭推流
+3. ffmpeg库集成了librtmp
+4. 推送地址源码固定设置方式
+
 v1.0.1
 1. 添加ffmpeg库，库支持fdk-aac
 2. 支持ffmpeg 的api编码音频aac
