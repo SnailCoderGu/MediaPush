@@ -10,11 +10,25 @@
 class VideoEncoder
 {
 public:
+	struct VCodecConfig
+	{
+		int codec_type;
+		int codec_id;
+		int width;
+		int height;
+		int fps;
+		int format;
+	};
+
+public:
 	virtual ~VideoEncoder() {};
 	VideoEncoder() {};
 	virtual int InitEncode(int width, int height, int fps, int bitrate, const char* profile) = 0;
 	virtual unsigned int Encode(unsigned char* src_buf, unsigned char* dst_buf) = 0;
 	virtual int StopEncode() = 0;
+
+	inline virtual VCodecConfig& GetCodecConfig() { return codec_config; }
+
 
 protected:
 	void ParseProfileLevelId(const char* profile, char* profilename, uint8_t* levelidc)
@@ -59,4 +73,8 @@ protected:
 
 		*levelidc = level_idc;
 	}
+
+	VCodecConfig codec_config;
+
+
 };

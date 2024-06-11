@@ -17,6 +17,18 @@ public:
 	int InitEncode(int width, int height, int fps, int bitrate, const char* profile)override;
 	unsigned int Encode(unsigned char* src_buf, unsigned char* dst_buf)override;
 	int StopEncode()override;
+
+	const uint8_t* const GetExterdata() {
+		return videoCodecCtx->extradata;
+		
+	}
+	const int const GetExterdataSize() {
+		
+		return videoCodecCtx->extradata_size;
+	}
+
+	void CopySpsPps(uint8_t* src,int size);
+
 private:
 
 	AVPacket* pkt;
@@ -28,5 +40,7 @@ private:
 #endif // WRITE_CAPTURE_YUV
 
 	uint64_t pts = 0;
+
+	bool receive_first_frame =  true;
 };
 

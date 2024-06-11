@@ -15,6 +15,9 @@ int  SwrResample::Init(int64_t src_ch_layout, int64_t dst_ch_layout,
     src_sample_fmt_ = src_sample_fmt;
     dst_sample_fmt_ = dst_sample_fmt;
 
+    src_rate_ = src_rate;
+    dst_rate_ = dst_rate;
+
     int ret;
     /* create resampler context */
     swr_ctx = swr_alloc();
@@ -59,7 +62,7 @@ int  SwrResample::Init(int64_t src_ch_layout, int64_t dst_ch_layout,
     src_nb_samples_ = src_nb_samples;
 
     //配置输出的参数
-    int max_dst_nb_samples = dst_nb_samples_ =
+    max_dst_nb_samples = dst_nb_samples_ =
         av_rescale_rnd(src_nb_samples, dst_rate, src_rate, AV_ROUND_UP);
 
     dst_nb_channels = av_get_channel_layout_nb_channels(dst_ch_layout);
@@ -73,6 +76,7 @@ int  SwrResample::Init(int64_t src_ch_layout, int64_t dst_ch_layout,
 
     int data_size = av_get_bytes_per_sample(dst_sample_fmt_);
     
+    return 0;
 }
 
 int SwrResample::WriteInput(const char* data, uint64_t len)
@@ -119,15 +123,31 @@ int SwrResample::WriteInput(AVFrame* frame)
 }
 
 
-int SwrResample::SwrConvert(char* data)
+int SwrResample::SwrConvert(char** data)
 {
-    int ret = swr_convert(swr_ctx, dst_data_, dst_nb_samples_, (const uint8_t**)src_data_, src_nb_samples_);
+    int ret = 0;
+
+    //误差排查
+    dst_nb_samples_ = av_rescale_rnd(swr_get_delay(swr_ctx, src_rate_) +
+        src_nb_samples_, dst_rate_, src_rate_, AV_ROUND_UP);
+
+	if (dst_nb_samples_ > max_dst_nb_samples) {
+		av_freep(&dst_data_[0]);
+		ret = av_samples_alloc(dst_data_, &dst_linesize, dst_nb_channels,
+            dst_nb_samples_, dst_sample_fmt_, 1);
+        if (ret < 0)
+            return -1;
+		max_dst_nb_samples = dst_nb_samples_;
+	}
+
+    ret = swr_convert(swr_ctx, dst_data_, dst_nb_samples_, (const uint8_t**)src_data_, src_nb_samples_);
     if (ret < 0) {
         fprintf(stderr, "Error while converting\n");
         exit(1);
     }
+    // ret 返回的长度理论和dst_nb_samples_一致，但是实际不是，这也是上面产生误差的原因
 
-    int  dst_bufsize = av_samples_get_buffer_size(&dst_linesize, dst_nb_channels,
+    int  dst_bufsize = av_samples_get_buffer_size(nullptr, dst_nb_channels,
         ret, dst_sample_fmt_, 1);
 
    int planar = av_sample_fmt_is_planar(dst_sample_fmt_);
@@ -140,7 +160,8 @@ int SwrResample::SwrConvert(char* data)
 #ifdef WRITE_RESAMPLE_PCM_FILE
        fwrite(dst_data_[0], 1, dst_bufsize, out_resample_pcm_file);
 #endif
-       memcpy(data, dst_data_[0], dst_bufsize);
+       
+       *data = (char*)(dst_data_[0]); //这里用二级指针，没有拷贝，是因为考虑到实际重采样的长度，不是很标准
        
    }
 

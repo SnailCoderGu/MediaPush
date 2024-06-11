@@ -81,7 +81,7 @@
       <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -99,6 +99,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AacEncoder.cpp" />
+    <ClCompile Include="RtmpPush.cpp" />
     <ClCompile Include="SwrResample.cpp" />
     <ClCompile Include="VideoEncodeFF.cpp" />
     <ClCompile Include="VideoEncoderX.cpp" />
@@ -127,6 +128,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AacEncoder.h" />
+    <ClInclude Include="AudioEncode.h" />
+    <ClInclude Include="RtmpPush.h" />
     <ClInclude Include="SwrResample.h" />
     <ClInclude Include="VideoEncode.h" />
     <ClInclude Include="VideoEncodeFF.h" />

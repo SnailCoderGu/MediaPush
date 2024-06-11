@@ -36,13 +36,18 @@ MediaPushWindow::MediaPushWindow(QWidget *parent)
 	//添加麦克风设备菜单
 	QActionGroup* audioDevicesGroup = new QActionGroup(this);
 	audioDevicesGroup->setExclusive(true);
+	QAudioDeviceInfo default_device_info;
 	QList<QAudioDeviceInfo> availableMics =QAudioDeviceInfo::availableDevices(QAudio::Mode::AudioInput);
 	for (const QAudioDeviceInfo& audioInfo : availableMics) {
 		QAction* audioDeviceAction = new QAction(audioInfo.deviceName(), audioDevicesGroup);
 		audioDeviceAction->setCheckable(true);
 		audioDeviceAction->setData(QVariant::fromValue(audioInfo));
-		if (audioInfo == QAudioDeviceInfo::defaultInputDevice());
+		if (audioInfo.deviceName() == QAudioDeviceInfo::defaultInputDevice().deviceName());
+		{
 			audioDeviceAction->setChecked(true);
+			default_device_info = audioInfo;
+		}
+		
 
 		ui.menuADevices->addAction(audioDeviceAction);
 	}
@@ -55,7 +60,7 @@ MediaPushWindow::MediaPushWindow(QWidget *parent)
 	//设置摄像头
 	setCamera(QCameraInfo::defaultCamera());
 	//设置麦克风
-	setMic(QAudioDeviceInfo::defaultInputDevice());
+	setMic(default_device_info);
 
 	ui.actionStart->setEnabled(true);
 	ui.actionStop->setEnabled(false);
@@ -76,6 +81,9 @@ void MediaPushWindow::InitAudioEncode()
 	int channel_layout = m_mic->format().chanel_layout;
 	AVSampleFormat smaple_fmt = m_mic->format().sample_fmt;
 	aacEncoder->InitEncode(sample_rate, 96000, smaple_fmt, channel_layout);
+
+	m_mic->InitDecDataSize(aacEncoder->frame_byte_size);
+
 }
 
 void MediaPushWindow::start()
@@ -86,10 +94,42 @@ void MediaPushWindow::start()
 
 	start_flag = true;
 
+	audio_encoder_data = new unsigned char[1024 * 2 * 2];
+	video_encoder_data = new unsigned char[1024 * 1024];
+
 	m_mic->OpenWrite();
 	aacEncoder.reset(new AacEncoder());
 	InitAudioEncode();
+
+
+	if (!ffVideoEncoder)
+	{
+#if USE_FFMPEG_VIDEO_ENCODE
+		ffVideoEncoder.reset(new VideoEncodeFF());
+		ffVideoEncoder->InitEncode(width_, height_, 25, 2000000, "main");
+#else
+		ffVideoEncoder.reset(new VideoEncoderX());
+		ffVideoEncoder->InitEncode(width_, height_, 25, 2000000, "42801f");
+#endif
+	}
+
+	rtmpPush.reset(new RtmpPush());
+	rtmpPush->OpenFormat("rtmp://192.168.109.128:1935/live/test");
+
 	
+	VideoEncoder::VCodecConfig& vcode_info = ffVideoEncoder->GetCodecConfig();
+	rtmpPush->InitVideoCodePar(static_cast<AVMediaType>(vcode_info.codec_type),
+		static_cast<AVCodecID>(vcode_info.codec_id),
+		vcode_info.width, vcode_info.height, vcode_info.fps, vcode_info.format,
+		ffVideoEncoder->GetExterdata(), ffVideoEncoder->GetExterdataSize());
+
+	AudioEncoder::ACodecConfig& acode_info = aacEncoder->GetCodecConfig();
+	rtmpPush->InitAudioCodecPar(static_cast<AVMediaType>(acode_info.codec_type),
+		static_cast<AVCodecID>(acode_info.codec_id),
+		acode_info.sample_rate, acode_info.channel, acode_info.format,
+		aacEncoder->GetExterdata(),aacEncoder->GetExterdataSize());
+
+	rtmpPush->WriteHeader();
 
 #ifdef WRITE_CAPTURE_YUV
 	if (!yuv_out_file) {
@@ -99,7 +139,6 @@ void MediaPushWindow::start()
 			qDebug() << "Open yuv file failed";
 		}
 	}
-#endif // WRITE_CAPTURE_YUV
 
 	if (!rgb_out_file) {
 		rgb_out_file = fopen("output.rgb", "wb");
@@ -108,6 +147,7 @@ void MediaPushWindow::start()
 			qDebug() << "Open rgb file failed";
 		}
 	}
+#endif // WRITE_CAPTURE_YUV
 
 }
 
@@ -122,9 +162,15 @@ void MediaPushWindow::stop()
 		fclose(yuv_out_file);
 		yuv_out_file = nullptr;
 	}
+
+	if (rgb_out_file) {
+		fclose(rgb_out_file);
+		rgb_out_file = nullptr;
+	}
 #endif
 
 	m_mic->CloseWrite();
+
 
 	if (aacEncoder)
 	{
@@ -138,12 +184,24 @@ void MediaPushWindow::stop()
 		ffVideoEncoder.reset(nullptr);
 	}
 
+	if (audio_encoder_data)
+	{
+		delete[] audio_encoder_data;
+		audio_encoder_data = nullptr;
+	}
+	if (video_encoder_data) {
+		delete[] audio_encoder_data;
+		audio_encoder_data = nullptr;
+	}
+
 	start_flag = false;
 
-	if (rgb_out_file) {
-		fclose(rgb_out_file);
-		rgb_out_file = nullptr;
+	if (rtmpPush)
+	{
+		rtmpPush->Close();
 	}
+
+
 
 }
 
@@ -215,7 +273,12 @@ void MediaPushWindow::recvAFrame(const char* data, qint64 len)
 {
 	if (aacEncoder)
 	{
-	   aacEncoder->Encode(data, len, nullptr);
+	   int ret_len = aacEncoder->Encode(data, len, audio_encoder_data);
+
+	   if (rtmpPush&& ret_len > 0)
+	   {
+		   rtmpPush->PushPacket(RtmpPush::MediaType::AUDIO,audio_encoder_data, ret_len);
+	   }
 	}
 }
 
@@ -224,78 +287,79 @@ void MediaPushWindow::recvVFrame(QVideoFrame& frame) {
 
 	// 获取 YUV 编码的原始数据
 	QVideoFrame::PixelFormat pixelFormat = frame.pixelFormat();
+
+	width_ = frame.width();
+	height_ = frame.height();
 	
 	//需要写文件的时候才去转换数据
-
-	if (pixelFormat == QVideoFrame::Format_RGB32 && start_flag)
+	if (ffVideoEncoder)
 	{
+		if (pixelFormat == QVideoFrame::Format_RGB32)
+		{
 		
-		int width = frame.width();
-		int height = frame.height();
+			int width = frame.width();
+			int height = frame.height();
 
-		if (dst_yuv_420 == nullptr)
-		{
-			dst_yuv_420 = new uchar[width * height * 3 / 2];
-			memset(dst_yuv_420, 128, width * height * 3 / 2);
-		}
-
-		if (!ffVideoEncoder)
-		{
-#if USE_FFMPEG_VIDEO_ENCODE
-			ffVideoEncoder.reset(new VideoEncodeFF());
-			ffVideoEncoder->InitEncode(width, height, 25, 2000000, "main");
-#else
-			ffVideoEncoder.reset(new VideoEncoderX());
-			ffVideoEncoder->InitEncode(width, height, 25, 2000000, "42801f");	
-#endif
-		}
-		
-		int planeCount = frame.planeCount();
-		int mapBytes = frame.mappedBytes();
-		int rgb32BytesPerLine = frame.bytesPerLine();
-		const uchar* data = frame.bits();
-		if (data == NULL)
-		{
-			return;
-		}
-
-		QVideoFrame::FieldType fileType = frame.fieldType();
-
-		int idx = 0;
-		int idxu = 0;
-		int idxv = 0;
-		for (int i = height-1;i >=0 ;i--)
-		{
-			for (int j = 0;j < width;j++)
+			if (dst_yuv_420 == nullptr)
 			{
-				uchar b = data[(width*i+j) * 4];
-				uchar g = data[(width * i + j) * 4 + 1];
-				uchar r = data[(width * i + j) * 4 + 2];
-				uchar a = data[(width * i + j) * 4 + 3];
-				
-				if (rgb_out_file) {
-					//fwrite(&b, 1, 1, rgb_out_file);
-					//fwrite(&g, 1, 1, rgb_out_file);
-					//fwrite(&r, 1, 1, rgb_out_file);
-					//fwrite(&a, 1, 1, rgb_out_file);
-				}
+				dst_yuv_420 = new uchar[width * height * 3 / 2];
+				memset(dst_yuv_420, 128, width * height * 3 / 2);
+			}
 
-				uchar y = RGB2Y(r, g, b);
-				uchar u = RGB2U(r, g, b);
-				uchar v = RGB2V(r, g, b);
 
-				dst_yuv_420[idx++] = clip_value(y,0,255);
-				if (j % 2 == 0 && i % 2 == 0) {
+		
+			int planeCount = frame.planeCount();
+			int mapBytes = frame.mappedBytes();
+			int rgb32BytesPerLine = frame.bytesPerLine();
+			const uchar* data = frame.bits();
+			if (data == NULL)
+			{
+				return;
+			}
+
+			QVideoFrame::FieldType fileType = frame.fieldType();
+
+			int idx = 0;
+			int idxu = 0;
+			int idxv = 0;
+			for (int i = height-1;i >=0 ;i--)
+			{
+				for (int j = 0;j < width;j++)
+				{
+					uchar b = data[(width*i+j) * 4];
+					uchar g = data[(width * i + j) * 4 + 1];
+					uchar r = data[(width * i + j) * 4 + 2];
+					uchar a = data[(width * i + j) * 4 + 3];
 				
-					dst_yuv_420[width*height + idxu++] = clip_value(u,0,255);
-					dst_yuv_420[width*height*5/4 + idxv++] = clip_value(v,0,255);
+					if (rgb_out_file) {
+						//fwrite(&b, 1, 1, rgb_out_file);
+						//fwrite(&g, 1, 1, rgb_out_file);
+						//fwrite(&r, 1, 1, rgb_out_file);
+						//fwrite(&a, 1, 1, rgb_out_file);
+					}
+
+					uchar y = RGB2Y(r, g, b);
+					uchar u = RGB2U(r, g, b);
+					uchar v = RGB2V(r, g, b);
+
+					dst_yuv_420[idx++] = clip_value(y,0,255);
+					if (j % 2 == 0 && i % 2 == 0) {
+				
+						dst_yuv_420[width*height + idxu++] = clip_value(u,0,255);
+						dst_yuv_420[width*height*5/4 + idxv++] = clip_value(v,0,255);
+					}
 				}
 			}
+
+		
+			int len = ffVideoEncoder->Encode(dst_yuv_420, video_encoder_data);
+
+			if (rtmpPush&&len>0)
+			{
+				rtmpPush->PushPacket(RtmpPush::MediaType::VIDEO,video_encoder_data, len);
+			}
 		}
-
-		ffVideoEncoder->Encode(dst_yuv_420, nullptr);
-
-
+		
 #ifdef WRITE_CAPTURE_YUV
 		if (yuv_out_file) {
 			fwrite(dst_yuv_420, 1, width * height * 3 / 2, yuv_out_file);

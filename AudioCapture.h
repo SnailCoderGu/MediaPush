@@ -69,6 +69,15 @@ public:
 
     void CaculateLevel(const char* data, qint64 len);
 
+    // 采集器输出的数据，按照1024个采样的频率输入数据，去重采样
+    void PaceToResample(const char* data, qint64 len);
+
+	// 重采样输出的数据，按照1024个采样的频率输入数据，去重采样
+	void PaceToEncode(char* data, qint64 len);
+
+    void InitDecDataSize(int len);
+
+
     qreal level() const { return m_level; }
 
     TFormat& format()
@@ -77,7 +86,7 @@ public:
     }
 
 signals:
-    void aframeAvailable(const char* data, qint64 len);
+    void aframeAvailable(char* data, qint64 len);
     void updateLevel();
 
 private:
@@ -94,10 +103,16 @@ private:
     const int nb_sample = 1024;  // 取1024个采样，主要是方便后面的aac编码
     int nb_sample_size = 0; //nb_sample个采样对应的字节数，要计算
 
+    int dst_nb_sample_size = 0; //目标采样的数据个数
+
+    //重组给重采样的
     char* src_swr_data =  nullptr;
     int nb_swr_remain = 0;
 
-    char* dst_swr_data = nullptr;
+    //重采样后数据再重组给编码器的
+    char* dst_enc_data = nullptr;
+    int dst_enc_nb_sample_size = 0;
+    int nb_enc_remain = 0;
 
     bool write_flag = false;
 #ifdef WRITE_RAW_PCM_FILE

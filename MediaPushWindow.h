@@ -12,6 +12,7 @@
 #include "imagesettings.h"
 #include "CBaseCameraSurface.h"
 #include "AudioCapture.h"
+#include "RtmpPush.h"
 
 
 #define USE_FFMPEG_VIDEO_ENCODE 1;
@@ -134,5 +135,13 @@ private:
 
 	QScopedPointer<AacEncoder> aacEncoder;
 
+
+	QScopedPointer<RtmpPush> rtmpPush;
+
+	int width_ = 0;
+	int height_ = 0;
+
+	unsigned char* audio_encoder_data  = nullptr;
+	unsigned char* video_encoder_data = nullptr;
 	
 };

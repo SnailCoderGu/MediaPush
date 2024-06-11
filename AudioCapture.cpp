@@ -60,6 +60,12 @@ void AudioCapture::Start(const QAudioDeviceInfo& micInfo)
     }
 #endif // WRITE_RESAMPLE_PCM_FILE
 
+    //QAudioFormat target_format;
+    //target_format.setSampleRate(48000);
+    //target_format.setChannelCount(2);
+
+    //m_pFormat = micInfo.nearestFormat(target_format);
+
     m_pFormat = micInfo.preferredFormat();
 
     AVSampleFormat sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16;
@@ -135,7 +141,7 @@ void AudioCapture::Start(const QAudioDeviceInfo& micInfo)
     int64_t dst_ch_layout = src_ch_layout;
 
     int src_rate = m_pFormat.sampleRate();
-    int dst_rate = src_rate;
+    int dst_rate = 44100;
 
     AVSampleFormat src_sample_fmt = sample_fmt;
     AVSampleFormat dst_sample_fmt = AV_SAMPLE_FMT_S16;
@@ -149,9 +155,6 @@ void AudioCapture::Start(const QAudioDeviceInfo& micInfo)
 
     m_pSwr->Init(src_ch_layout, dst_ch_layout, src_rate, dst_rate, src_sample_fmt, dst_sample_fmt, nb_sample);
 
-    int dst_nb_sample_size = m_pSwr->GetDstNbSample() * (m_pFormat.sampleSize() / 8) * channel_count;
-    dst_swr_data = new char[dst_nb_sample_size];
-
     audioInput = new QAudioInput(micInfo, m_pFormat);
     //int64_t cbuffSize = audioInput->bufferSize();
     //int64_t bufferSize = m_pFormat.bytesForDuration(1000*1000); // 将 10 毫秒转换为字节数
@@ -163,22 +166,26 @@ void AudioCapture::Start(const QAudioDeviceInfo& micInfo)
 
 }
 
+void AudioCapture::InitDecDataSize(int len)
+{
+    if (dst_enc_data)
+    {
+        delete[] dst_enc_data;
+        dst_enc_data = nullptr;
+        dst_enc_nb_sample_size = 0;
+    }
+    dst_enc_nb_sample_size = len;
+    dst_enc_data = new char[dst_enc_nb_sample_size];
+}
+
 
 void AudioCapture::Stop()
 {
-
-
     if (audioInput)
     {
         audioInput->stop();
         delete audioInput;
         audioInput = nullptr;
-    }
-
-    if (dst_swr_data)
-    {
-        delete[] dst_swr_data;
-        dst_swr_data = nullptr;
     }
 
     if (m_pSwr)
@@ -193,6 +200,13 @@ void AudioCapture::Stop()
         delete[] src_swr_data;
         src_swr_data = nullptr;
     }
+
+	if (dst_enc_data)
+	{
+		delete[] dst_enc_data;
+		dst_enc_data = nullptr;
+		dst_enc_nb_sample_size = 0;
+	}
 
     this->close();
 
@@ -264,40 +278,98 @@ void AudioCapture::CaculateLevel(const char* data, qint64 len) {
 
 }
 
+void AudioCapture::PaceToResample(const char* data, qint64 len)
+{
+
+#ifdef WRITE_RAW_PCM_FILE
+	fwrite(data, 1, len, out_raw_pcm_file);
+#endif
+
+    if (len != nb_sample_size)
+    {
+        qDebug() << "Reorganize resample dst data len is wrong " << len;
+        return;
+    }
+
+	//消费数据
+   
+	m_pSwr->WriteInput(src_swr_data, nb_sample_size);   //写如数据
+     char* result_data = nullptr;
+	int rlen = m_pSwr->SwrConvert(&result_data); //执行重采样
+
+    if (dst_enc_data)
+    {
+        PaceToEncode(result_data, rlen);
+    }
+   
+	
+}
+
+void AudioCapture::PaceToEncode(char* data, qint64 len)
+{
+
+	//再重行组织一次1024长度给编码器
+	int pre_remian = nb_enc_remain + len;  //预计的当前拥有的数据总长度
+	char* data_curr = data;
+	int len_curr = len;
+	while (true) {
+		if (pre_remian < dst_enc_nb_sample_size)
+		{
+			memcpy(dst_enc_data + nb_enc_remain, data_curr, len);
+            nb_enc_remain = pre_remian;
+			break;
+		}
+		else
+		{
+			int missing_len = dst_enc_nb_sample_size - nb_enc_remain;
+			memcpy(dst_enc_data + nb_enc_remain, data_curr, missing_len);
+            
+			emit aframeAvailable(dst_enc_data, dst_enc_nb_sample_size);
+
+            nb_enc_remain = 0;
+
+			pre_remian = pre_remian - dst_enc_nb_sample_size; //消费了一个单位
+			data_curr = data_curr + missing_len;
+			len_curr = len - missing_len;
+
+		}
+	}
+
+	
+}
+
+
 qint64 AudioCapture::writeData(const char* data, qint64 len)
 {
     // 在这里处理音频数据，例如保存到文件、进行处理等
     //qDebug() << "Received audio data. Size:" << len;
     CaculateLevel(data,len);
 
-
-    
     if (write_flag)
     {
-        if (nb_swr_remain + len < nb_sample_size)
-        {
-            memcpy(src_swr_data + nb_swr_remain, data, len);
-            nb_swr_remain += len;
-        }
-        else
-        {
-            int out_size = nb_swr_remain + len - nb_sample_size;
-            memcpy(src_swr_data+ nb_swr_remain, data, len - out_size);
 
-#ifdef WRITE_RAW_PCM_FILE
-            fwrite(src_swr_data, 1, nb_sample_size, out_raw_pcm_file);
-#endif
-
-            //消费数据
-            m_pSwr->WriteInput(src_swr_data, nb_sample_size);
-            int rlen = m_pSwr->SwrConvert(dst_swr_data);
-            emit aframeAvailable(dst_swr_data, rlen);
-
-            //重新取一个开始
-            nb_swr_remain = out_size;
-            if (out_size > 0)
+        int pre_remian = nb_swr_remain + len;  //预计的当前拥有的数据总长度
+        char* data_curr = const_cast<char*>(data);
+        int len_curr = len;
+        while (true){
+            if (pre_remian < nb_sample_size)
             {
-                  memcpy(src_swr_data, data + (len- out_size), out_size);
+                memcpy(src_swr_data + nb_swr_remain, data_curr, len);
+                nb_swr_remain = pre_remian;
+                break;
+            }
+            else
+            {
+                int missing_len = nb_sample_size - nb_swr_remain;
+                memcpy(src_swr_data + nb_swr_remain, data_curr, missing_len);
+
+                PaceToResample(src_swr_data, nb_sample_size);
+                nb_swr_remain = 0;
+
+                pre_remian = pre_remian - nb_sample_size; //消费了一个单位
+                data_curr = data_curr + missing_len;
+                len_curr = len - missing_len;
+
             }
         }
         

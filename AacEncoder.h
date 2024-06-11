@@ -6,9 +6,10 @@ extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/opt.h>
 }
+#include "AudioEncode.h"
 #define WRITE_CAPTURE_AAC
 
-class AacEncoder
+class AacEncoder : public AudioEncoder
 {
 public:
 	AacEncoder();
@@ -17,6 +18,16 @@ public:
 	int InitEncode(int sample_rate, int bit_rate, AVSampleFormat sample_fmt,int chanel_layout);
 	int Encode(const char* src_buf, int src_len, unsigned char* dst_buf);
 	int StopEncode();
+
+	const uint8_t* const GetExterdata() {
+		return audioCodecCtx->extradata;
+
+	}
+	const int const GetExterdataSize() {
+
+		return audioCodecCtx->extradata_size;
+	}
+
 
 	/* check that a given sample format is supported by the encoder */
 	static int check_sample_fmt(const AVCodec* codec, enum AVSampleFormat sample_fmt)
@@ -70,13 +81,19 @@ public:
 		}
 		return best_ch_layout;
 	}
+public:
 
+	int frame_byte_size = 0;
 private:
 	AVPacket* pkt = nullptr;
 	AVFrame* frame = nullptr;
 	AVCodecContext* audioCodecCtx = nullptr;
+
+	
+
 #ifdef WRITE_CAPTURE_AAC
 	FILE* aac_out_file = nullptr;
+
 #endif // WRITE_CAPTURE_YUV
 };
 

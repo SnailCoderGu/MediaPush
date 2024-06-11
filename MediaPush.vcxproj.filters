@@ -61,6 +61,9 @@
     <ClCompile Include="SwrResample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RtmpPush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="imagesettings.ui">
@@ -92,6 +95,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SwrResample.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RtmpPush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioEncode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
