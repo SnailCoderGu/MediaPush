@@ -64,9 +64,15 @@
     <ClCompile Include="RtmpPush.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ChooseUrlDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="imagesettings.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="chooseurl.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>
@@ -78,6 +84,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="AudioCapture.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="ChooseUrlDialog.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>

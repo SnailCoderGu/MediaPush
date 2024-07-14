@@ -61,6 +61,6 @@ private:
 	int64_t audio_pts;
 
 
-	AVBSFContext* bsf_ctx = nullptr;
+	//AVBSFContext* bsf_ctx = nullptr;
 };
 

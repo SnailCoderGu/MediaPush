@@ -88,6 +88,17 @@ void MediaPushWindow::InitAudioEncode()
 
 void MediaPushWindow::start()
 {
+	std::string url = "rtmp://192.168.109.128:1935/live/test";
+	ChooseUrlDialog urlDialog;
+	if (urlDialog.exec() == QDialog::Accepted) {
+		url = urlDialog.url;
+	}
+	else
+	{
+		return;
+	}
+	
+
 	ui.actionStart->setEnabled(false);
 	ui.actionStop->setEnabled(true);
 	ui.actionSettings->setEnabled(false);
@@ -114,7 +125,7 @@ void MediaPushWindow::start()
 	}
 
 	rtmpPush.reset(new RtmpPush());
-	rtmpPush->OpenFormat("rtmp://192.168.109.128:1935/live/test");
+	rtmpPush->OpenFormat(url);
 
 	
 	VideoEncoder::VCodecConfig& vcode_info = ffVideoEncoder->GetCodecConfig();

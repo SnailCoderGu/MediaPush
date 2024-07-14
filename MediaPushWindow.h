@@ -13,6 +13,7 @@
 #include "CBaseCameraSurface.h"
 #include "AudioCapture.h"
 #include "RtmpPush.h"
+#include "ChooseUrlDialog.h"
 
 
 #define USE_FFMPEG_VIDEO_ENCODE 1;

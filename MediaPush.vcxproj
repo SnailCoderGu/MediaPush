@@ -99,11 +99,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AacEncoder.cpp" />
+    <ClCompile Include="ChooseUrlDialog.cpp" />
     <ClCompile Include="RtmpPush.cpp" />
     <ClCompile Include="SwrResample.cpp" />
     <ClCompile Include="VideoEncodeFF.cpp" />
     <ClCompile Include="VideoEncoderX.cpp" />
     <QtRcc Include="MediaPushWindow.qrc" />
+    <QtUic Include="chooseurl.ui">
+      <QtUicDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)uic\</QtUicDir>
+    </QtUic>
     <QtUic Include="imagesettings.ui">
       <QtUicDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)uic\</QtUicDir>
     </QtUic>
@@ -129,6 +133,7 @@
   <ItemGroup>
     <ClInclude Include="AacEncoder.h" />
     <ClInclude Include="AudioEncode.h" />
+    <QtMoc Include="ChooseUrlDialog.h" />
     <ClInclude Include="RtmpPush.h" />
     <ClInclude Include="SwrResample.h" />
     <ClInclude Include="VideoEncode.h" />
