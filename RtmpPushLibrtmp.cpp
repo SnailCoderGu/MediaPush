@@ -375,7 +375,7 @@ namespace live
 
 		std::lock_guard<std::mutex> lock(librmtp_mutex);
 
-		int nal_size = isNalTail(extradata, extextradata_size); //计算nalu头长度，4个字节或者3个字节
+		int nal_size = isNalTail(buf, len); //计算nalu头长度，4个字节或者3个字节
 
 		// 去掉nalu头的界定符号
 		buf += nal_size;
