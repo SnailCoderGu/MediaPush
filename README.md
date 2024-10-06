@@ -4,6 +4,10 @@
 v1.2.0
 1. 增加了使用librtmp api方式推流 RTMP_PUSH_USER_FFMPEG定义来区分不同的推流方式
 2. 增加了界面输入rtmp推流地址
+3. 
+![image](https://github.com/user-attachments/assets/98e3ec5e-0186-446b-8015-1c6aac15a29c)
+
+
 
 v1.1.0
 1. 加入了ffmpeg推送rtmp
