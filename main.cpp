@@ -7,10 +7,6 @@
 
 int main(int argc, char *argv[])
 {
-
-
-
-
     QApplication a(argc, argv);
     MediaPushWindow w;
     w.resize(800, 600);

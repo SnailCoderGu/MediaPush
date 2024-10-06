@@ -67,6 +67,9 @@
     <ClCompile Include="ChooseUrlDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RtmpPushLibrtmp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="imagesettings.ui">
@@ -110,6 +113,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AudioEncode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RtmpPushLibrtmp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

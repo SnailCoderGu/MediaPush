@@ -124,6 +124,7 @@ void MediaPushWindow::start()
 #endif
 	}
 
+#ifdef RTMP_PUSH_USER_FFMPEG
 	rtmpPush.reset(new RtmpPush());
 	rtmpPush->OpenFormat(url);
 
@@ -141,6 +142,20 @@ void MediaPushWindow::start()
 		aacEncoder->GetExterdata(),aacEncoder->GetExterdataSize());
 
 	rtmpPush->WriteHeader();
+#else
+	rtmpPush.reset(new RtmpPushLibrtmp());
+	VideoEncoder::VCodecConfig& vcode_info = ffVideoEncoder->GetCodecConfig();
+	AudioEncoder::ACodecConfig& acode_info = aacEncoder->GetCodecConfig();
+	rtmpPush->Init(url,
+		vcode_info.width, vcode_info.height, vcode_info.fps,
+		acode_info.sample_rate, acode_info.channel);
+
+	rtmpPush->SendAacSpec(aacEncoder->GetExterdata(), aacEncoder->GetExterdataSize());
+	rtmpPush->SendSpsPps(ffVideoEncoder->GetExterdata(), ffVideoEncoder->GetExterdataSize());
+
+
+	
+#endif
 
 #ifdef WRITE_CAPTURE_YUV
 	if (!yuv_out_file) {
@@ -211,8 +226,6 @@ void MediaPushWindow::stop()
 	{
 		rtmpPush->Close();
 	}
-
-
 
 }
 
@@ -288,7 +301,11 @@ void MediaPushWindow::recvAFrame(const char* data, qint64 len)
 
 	   if (rtmpPush&& ret_len > 0)
 	   {
+#ifdef RTMP_PUSH_USER_FFMPEG
 		   rtmpPush->PushPacket(RtmpPush::MediaType::AUDIO,audio_encoder_data, ret_len);
+#else
+		   rtmpPush->SendAudio(audio_encoder_data, ret_len);
+#endif
 	   }
 	}
 }
@@ -367,7 +384,11 @@ void MediaPushWindow::recvVFrame(QVideoFrame& frame) {
 
 			if (rtmpPush&&len>0)
 			{
+#ifdef RTMP_PUSH_USER_FFMPEG
 				rtmpPush->PushPacket(RtmpPush::MediaType::VIDEO,video_encoder_data, len);
+#else
+				rtmpPush->SendVideo(video_encoder_data, len);
+#endif
 			}
 		}
 		

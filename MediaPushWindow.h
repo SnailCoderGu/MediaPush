@@ -12,11 +12,21 @@
 #include "imagesettings.h"
 #include "CBaseCameraSurface.h"
 #include "AudioCapture.h"
+
+//#define RTMP_PUSH_USER_FFMPEG
+
+#ifdef RTMP_PUSH_USER_FFMPEG
 #include "RtmpPush.h"
+#define USE_FFMPEG_VIDEO_ENCODE 1;
+#else
+#include "RtmpPushLibrtmp.h"
+#define USE_FFMPEG_VIDEO_ENCODE 1;
+using namespace live;
+#endif
+
+
 #include "ChooseUrlDialog.h"
 
-
-#define USE_FFMPEG_VIDEO_ENCODE 1;
 
 #if USE_FFMPEG_VIDEO_ENCODE
 #include "VideoEncodeFF.h"
@@ -136,13 +146,16 @@ private:
 
 	QScopedPointer<AacEncoder> aacEncoder;
 
-
+#ifdef RTMP_PUSH_USER_FFMPEG
 	QScopedPointer<RtmpPush> rtmpPush;
-
+#else
+	QScopedPointer<RtmpPushLibrtmp> rtmpPush;
+#endif
 	int width_ = 0;
 	int height_ = 0;
 
 	unsigned char* audio_encoder_data  = nullptr;
 	unsigned char* video_encoder_data = nullptr;
+
 	
 };

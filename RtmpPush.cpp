@@ -1,5 +1,7 @@
 #include "RtmpPush.h"
 #include <QDebug>
+#include <string>
+#include <iostream>
 
 void RtmpPush::OpenFormat(std::string url)
 {
@@ -101,6 +103,12 @@ void RtmpPush::WriteHeader()
 
 void RtmpPush::PushPacket(MediaType type,uint8_t* data, int size) {
 
+	//std::cout << "data: ";
+	//for (int i = 0;i < 10;i++)
+	//{
+	//	std::cout << " " << (int)(data[i]) << " ";
+	//}
+	//std::cout << std::endl;
 	
 	std::lock_guard<std::mutex> lock(ffmpeg_mutex);
 

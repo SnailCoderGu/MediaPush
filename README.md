@@ -1,6 +1,10 @@
 # MediaPush
 使用ffmpeg ,directshow,x624,fdkaac,rtmp等技术，推流到平台
 
+v1.2.0
+1. 增加了使用librtmp api方式推流 RTMP_PUSH_USER_FFMPEG定义来区分不同的推流方式
+2. 增加了界面输入rtmp推流地址
+
 v1.1.0
 1. 加入了ffmpeg推送rtmp
 2. 可以启动推流，关闭推流

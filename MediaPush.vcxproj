@@ -66,11 +66,11 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)x264_install\include;$(SolutionDir)ffmpeg3.4-x64-debug\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)librtmp\include;$(SolutionDir)x264_install\include;$(SolutionDir)ffmpeg3.4-x64-debug\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)x264_install\lib;$(SolutionDir)ffmpeg3.4-x64-debug\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libx264.lib;avcodec.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)librtmp\lib;$(SolutionDir)x264_install\lib;$(SolutionDir)ffmpeg3.4-x64-debug\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libx264.lib;librtmp.lib;avcodec.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
@@ -101,6 +101,7 @@
     <ClCompile Include="AacEncoder.cpp" />
     <ClCompile Include="ChooseUrlDialog.cpp" />
     <ClCompile Include="RtmpPush.cpp" />
+    <ClCompile Include="RtmpPushLibrtmp.cpp" />
     <ClCompile Include="SwrResample.cpp" />
     <ClCompile Include="VideoEncodeFF.cpp" />
     <ClCompile Include="VideoEncoderX.cpp" />
@@ -135,6 +136,7 @@
     <ClInclude Include="AudioEncode.h" />
     <QtMoc Include="ChooseUrlDialog.h" />
     <ClInclude Include="RtmpPush.h" />
+    <ClInclude Include="RtmpPushLibrtmp.h" />
     <ClInclude Include="SwrResample.h" />
     <ClInclude Include="VideoEncode.h" />
     <ClInclude Include="VideoEncodeFF.h" />
